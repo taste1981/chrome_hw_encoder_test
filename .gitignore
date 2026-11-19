@@ -1,0 +1,11 @@
+# Test artifacts (cleaned by run-tests.ps1 before every run).
+results/
+
+# Local Chrome for Testing bundle (downloaded per machine).
+chrome_win64/
+
+# Logs and temp files.
+*.log
+*.tmp
+
+node_modules/
