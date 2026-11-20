@@ -87,6 +87,10 @@ Every run writes a self-contained **HTML report** — overall status first,
 then section-by-section case tables — plus the machine-readable **JSON twin**
 in `results\`. `--format json` writes only the JSON.
 
+While the suite runs, the console prints one progress line per completed
+case — `[n/total] pct% case-id status` (comparison legs are labeled) — so a
+run never sits silent.
+
 ## Exit codes
 
 | code | meaning |

@@ -517,7 +517,27 @@ async function runLeg({
       'Runtime.consoleAPICalled',
       (params) => {
         const first = params.args && params.args[0];
-        if (first && first.value === '__D3D12_ENC_CI_DONE__') consoleDone = true;
+        if (!first) return;
+        if (first.value === '__D3D12_ENC_CI_DONE__') {
+          consoleDone = true;
+        } else if (first.value === '__D3D12_ENC_CI_PROGRESS__') {
+          // Per-case progress emitted by the page: "[n/total] pct% id
+          // status". The leg label distinguishes the comparison legs from
+          // the main D3D12 leg.
+          const a = params.args;
+          const done = a[1] && a[1].value;
+          const total = a[2] && a[2].value;
+          const id = a[3] && a[3].value;
+          const status = a[4] && a[4].value;
+          if (typeof done === 'number' && typeof total === 'number' && total > 0) {
+            const pct = Math.round((done / total) * 100);
+            console.log(
+              `${mode === 'd3d12' ? '' : `(${mode}) `}` +
+                `[${done}/${total}] ${String(pct).padStart(3)}% ` +
+                `${id || '?'} ${status || '?'}`,
+            );
+          }
+        }
       },
       sessionId,
     );
