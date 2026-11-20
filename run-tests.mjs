@@ -95,10 +95,12 @@ options:
                             hevc-10b420 x mb/offset/both geometries)
   --stress-resolution       detect each codec/profile's supported resolution
                             range (MediaCapabilities, hardware-gated) and
-                            encode+decode 5 geometric points across it
-                            (relaxed floors, like the crop cases). Without
-                            --all this runs ONLY the resolution detection +
-                            stress cases — the rest of the matrix and the
+                            encode+decode 5 geometric points across it, each
+                            also mirrored to its portrait twin when the
+                            transposed resolution is in range (relaxed
+                            floors, like the crop cases). Without --all this
+                            runs ONLY the resolution detection + stress
+                            cases — the rest of the matrix and the
                             comparison legs are skipped
   --output <path>           report path (default: results\ directory; the
                             extension may be .html or .json — --format wins)
@@ -526,10 +528,12 @@ async function runLeg({
       ? opts.timeoutSec * 1000
       : Math.ceil((opts.frames / opts.fps) * 3 + 60) * 1000;
     // Stress defs materialize several real encodes each (one per geometric
-    // point), so the deadline must weight them by their point count.
+    // point), so the deadline must weight them by their point count. Each
+    // point also spawns its mirrored portrait twin, so a stress def costs
+    // up to 2x its point count.
     const caseCount = Math.max(
       1,
-      cases.reduce((n, c) => n + (c.stressPoints || 1), 0),
+      cases.reduce((n, c) => n + (c.stressPoints ? c.stressPoints * 2 : 1), 0),
     );
     const deadline = Date.now() + perCaseTimeoutMs * caseCount;
 

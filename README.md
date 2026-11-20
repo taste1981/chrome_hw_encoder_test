@@ -46,7 +46,7 @@ powershell .\run-tests.ps1 --chrome "C:\path\to\chrome.exe" --exclude-hevc-rext
 | `--bitrate-mode <m>` | `constant`/`variable` for the base families (default: constant) |
 | `--min-psnr <dB>` · `--max-mae <v>` | quality floors (default: 24 dB · 9) |
 | `--all` | every family plus `--stress-resolution`, both negative-control legs and the MF comparison |
-| `--stress-resolution` | resolution-range detection + 5 geometric stress points per codec. Without `--all`, this runs **only** the resolution detection + stress cases — the rest of the matrix and the comparison legs are skipped |
+| `--stress-resolution` | resolution-range detection + 5 geometric stress points per codec, each also mirrored to its portrait twin when the transposed resolution is in range. Without `--all`, this runs **only** the resolution detection + stress cases — the rest of the matrix and the comparison legs are skipped |
 | `--negative-control` | extra leg with the D3D12 VEA disabled |
 | `--l1t3-negative-control` | extra leg with the L1T3 feature gate disabled |
 | `--compare-mf` | informational MediaFoundation VEA comparison leg |
