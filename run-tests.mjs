@@ -103,17 +103,18 @@ options:
                             runs ONLY the resolution detection + stress
                             cases — the rest of the matrix and the
                             comparison legs are skipped
-  --resolution-map         probe a log-spaced resolution grid per codec
-                            string (VideoEncoder.isConfigSupported,
-                            hardware-gated) and report the supported-
-                            resolution map: per-width min/max height curve
-                            (bisection-refined), bounding box, and
-                            unsupported holes inside the box — then
-                            ENCODE-verify one frame at the geometric point
-                            set (advertised resolutions the real encoder
-                            fails are case failures). NOT included in
-                            --all; without --all this runs ONLY the
-                            resolution detection + map cases
+  --resolution-map         per-codec supported-resolution map. Probe a
+                            log-spaced isConfigSupported grid (per-width
+                            min/max height curve, bounding box, holes),
+                            then ENCODE-verify one frame: at the geometric
+                            point set AND across the full valid space — a
+                            per-width sweep (step 128, subsampling parity
+                            applied) of the advertised min/max heights with
+                            bisection to the actual encodable frontier.
+                            The report gets a dedicated map section with
+                            the full sweep table. NOT included in --all;
+                            without --all this runs ONLY the resolution
+                            detection + map cases
   --output <path>           report path (default: results\ directory; the
                             extension may be .html or .json — --format wins)
   --format <f>              html|json  (default: html — a self-contained
