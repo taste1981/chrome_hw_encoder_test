@@ -103,7 +103,9 @@ Cases whose frames fall below the PSNR/MAE quality floors are reported as
 **WARN**, not FAIL: they show up in the report and the verdict reason but do
 not fail the run (exit 0). Encoding errors, decode failures and structural
 gates (crop geometry, resize size, SVC structure, rate-change delivery)
-remain FAIL.
+remain FAIL. Resolution-stress points whose encode succeeded but whose
+verification decoder rejects the resolution (e.g. tiny HEVC) PASS with an
+encode-only note.
 
 ## CI wiring example
 
