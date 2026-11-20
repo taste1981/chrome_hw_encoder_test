@@ -681,6 +681,14 @@ async function runLeg({
     await sleep(500);
     const logLines = await readLogFile(path.join(userDataDir, 'chrome_debug.log'));
     const allLines = [...proc.stderrLines, ...logLines];
+    if (opts.dumpBitstream) {
+      // The vmodule lines (e.g. the per-subregion bSize DVLOGs) live here;
+      // keep a copy next to the dumps so one folder carries everything.
+      await fs.writeFile(
+        path.join(opts.dumpBitstream, 'chrome_debug.log'),
+        allLines.join('\n'),
+      );
+    }
     const attest = analyzeStderr(allLines);
 
     try {
