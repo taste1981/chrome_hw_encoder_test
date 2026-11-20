@@ -47,6 +47,7 @@ powershell .\run-tests.ps1 --chrome "C:\path\to\chrome.exe" --exclude-hevc-rext
 | `--min-psnr <dB>` · `--max-mae <v>` | quality floors (default: 24 dB · 9) |
 | `--all` | every family plus `--stress-resolution`, both negative-control legs and the MF comparison |
 | `--stress-resolution` | resolution-range detection + 5 geometric stress points per codec, each also mirrored to its portrait twin when the transposed resolution is in range. Without `--all`, this runs **only** the resolution detection + stress cases — the rest of the matrix and the comparison legs are skipped |
+| `--resolution-map` | per-codec supported-resolution map: a log-spaced `VideoEncoder.isConfigSupported` grid (hardware-gated) with the per-width min/max height curve (bisection-refined), the bounding box, and any unsupported holes inside the box. Pure probes, no encode. **Not** part of `--all`; without `--all`, runs **only** the resolution detection + map cases |
 | `--negative-control` | extra leg with the D3D12 VEA disabled |
 | `--l1t3-negative-control` | extra leg with the L1T3 feature gate disabled |
 | `--compare-mf` | informational MediaFoundation VEA comparison leg |
@@ -74,6 +75,7 @@ powershell .\run-tests.ps1 --chrome "C:\path\to\chrome.exe" --exclude-hevc-rext
 | HDR signaling | `hevc-hdr10` (BT.2020/PQ) |
 | Concurrent encoders | `<codec>-dual` (two simultaneous encoder instances) |
 | Resolution detection | one per codec string, always on |
+| Resolution map | one per codec string, only with `--resolution-map` (probe-only scan of the supported-resolution region, incl. holes inside the advertised range) |
 
 `<codec>` = `h264` / `hevc` / `av1` wherever listed. Unsupported
 configurations SKIP (they never fail unless `--require-all` is set) — e.g. a

@@ -83,9 +83,10 @@ options:
   --all                     everything: --codecs all (every family, see
                             --codecs) plus --stress-resolution,
                             --negative-control, --l1t3-negative-control and
-                            --compare-mf. SKIPs stay allowed (a machine
-                            without AV1 hardware encode still skips the av1
-                            families rather than failing).
+                            --compare-mf (--resolution-map stays opt-in).
+                            SKIPs stay allowed (a machine without AV1
+                            hardware encode still skips the av1 families
+                            rather than failing).
   --require-all             any SKIP becomes FAIL
   --exclude-hevc-rext       drop hevc-10b422/hevc-10b444 cases (and their
                             -screen variants; Rext still in driver bug-fix
@@ -102,6 +103,14 @@ options:
                             runs ONLY the resolution detection + stress
                             cases — the rest of the matrix and the
                             comparison legs are skipped
+  --resolution-map         probe a log-spaced resolution grid per codec
+                            string (VideoEncoder.isConfigSupported,
+                            hardware-gated) and report the supported-
+                            resolution map: per-width min/max height curve
+                            (bisection-refined), bounding box, and
+                            unsupported holes inside the box. NOT included
+                            in --all; without --all this runs ONLY the
+                            resolution detection + map cases
   --output <path>           report path (default: results\ directory; the
                             extension may be .html or .json — --format wins)
   --format <f>              html|json  (default: html — a self-contained
@@ -176,6 +185,7 @@ export function parseArgs(argv) {
     ignoreGpuBlocklist: false,
     disableGpuDriverBugWorkarounds: false,
     stressResolution: false,
+    resolutionMap: false,
     all: false,
     force: false,
     keepProfile: false,
@@ -283,6 +293,9 @@ export function parseArgs(argv) {
         break;
       case '--stress-resolution':
         opts.stressResolution = true;
+        break;
+      case '--resolution-map':
+        opts.resolutionMap = true;
         break;
       case '--force':
         opts.force = true;
@@ -739,17 +752,26 @@ async function main() {
   // own page server because the config is baked into the served HTML at
   // server creation (lib/page-server.mjs).
   //
-  // Stress-only mode: --stress-resolution WITHOUT --all runs the resolution
-  // detection + stress cases and nothing else, so the optional comparison
-  // legs (which need matrix cases) are skipped too.
-  const stressOnly = opts.stressResolution && !opts.all;
-  if (stressOnly && (opts.negativeControl || opts.l1t3NegativeControl || opts.compareMf)) {
+  // Diagnostic-only modes: --stress-resolution / --resolution-map WITHOUT
+  // --all run only the resolution diagnostics (detection plus the
+  // requested diagnostic) — the matrix and the comparison legs, which need
+  // matrix cases, are skipped.
+  const diagnosticOnly =
+    !opts.all && (opts.stressResolution || opts.resolutionMap);
+  if (diagnosticOnly && (opts.negativeControl || opts.l1t3NegativeControl || opts.compareMf)) {
     console.warn(
-      'warning: --stress-resolution without --all runs the resolution ' +
-        'stress only — the comparison legs do not apply and are skipped',
+      'warning: a resolution diagnostic without --all runs the diagnostic ' +
+        'only — the comparison legs do not apply and are skipped',
     );
   }
-  const mainCases = stressOnly ? cases.filter((c) => c.type) : cases;
+  const mainCases = diagnosticOnly
+    ? cases.filter(
+        (c) =>
+          c.type === 'resdetect' ||
+          (opts.stressResolution && c.type === 'resstress') ||
+          (opts.resolutionMap && c.type === 'resmap'),
+      )
+    : cases;
   const matrixCases = cases.filter((c) => !c.type);
   const serveLeg = async (legCases) => {
     if (opts.pageExternal) {
@@ -781,7 +803,7 @@ async function main() {
     harnessError = e;
   }
   if (served) await served.close();
-  if (!harnessError && opts.negativeControl && !stressOnly) {
+  if (!harnessError && opts.negativeControl && !diagnosticOnly) {
     try {
       // Start from a clean slate: no Chrome instance of the D3D12 leg may
       // still be alive when the next leg launches.
@@ -800,7 +822,7 @@ async function main() {
     }
     if (served) await served.close();
   }
-  if (!harnessError && opts.l1t3NegativeControl && !stressOnly) {
+  if (!harnessError && opts.l1t3NegativeControl && !diagnosticOnly) {
     try {
       // Focused A/B leg: the -l1t2/-l1t3 families plus their base families
       // (the hardware control). Runs with
@@ -834,7 +856,7 @@ async function main() {
     }
     if (served) await served.close();
   }
-  if (!harnessError && opts.compareMf && !stressOnly) {
+  if (!harnessError && opts.compareMf && !diagnosticOnly) {
     try {
       const prevLeg = negativeLeg || mainLeg;
       if (prevLeg) killChromeInstancesFor(prevLeg.userDataDir);
@@ -873,6 +895,9 @@ async function main() {
   const verdictInfo = computeVerdict({
     chromeMajor: mainLeg.chromeMajor,
     opts,
+    // Map-only runs never encode: no D3D12 init lines can appear, so the
+    // attestation requirement is waived for them.
+    attestationRequired: !(opts.resolutionMap && !opts.stressResolution && !opts.all),
     main: {
       cases: mainLeg.pageResult ? mainLeg.pageResult.cases : [],
       secureContext: mainLeg.pageResult ? mainLeg.pageResult.secureContext : null,
