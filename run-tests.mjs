@@ -123,6 +123,10 @@ options:
   --format <f>              html|json  (default: html — a self-contained
                             section-by-section page, overall status first;
                             the .json data twin is always written too)
+  --dump-bitstream <dir>    write every case's first keyframe chunk to
+                            <dir>/<case-id>.av1 (debug aid for inspecting the
+                            raw encoded bitstream; the stream is chunked over
+                            console markers, so runs are slower with it on)
   --negative-control        second run with --disable-features=D3D12VideoEncodeAccelerator
   --l1t3-negative-control   extra run with --disable-features=D3D12VideoEncodeAcceleratorL1T3:
                             -l1t3 cases must SKIP (the flag gates L1T3) while
@@ -181,6 +185,7 @@ export function parseArgs(argv) {
     excludeHevcRext: false,
     excludeCrop: false,
     output: null,
+    dumpBitstream: null,
     format: 'html',
     negativeControl: false,
     l1t3NegativeControl: false,
@@ -264,6 +269,9 @@ export function parseArgs(argv) {
         break;
       case '--output':
         opts.output = need();
+        break;
+      case '--dump-bitstream':
+        opts.dumpBitstream = need();
         break;
       case '--format':
         opts.format = need();
@@ -533,6 +541,12 @@ async function runLeg({
     await browser.send('Runtime.enable', {}, { sessionId });
 
     let consoleDone = false;
+    // --dump-bitstream: per-case accumulation of chunked base64 markers
+    // (__D3D12_ENC_CI_DUMP__), keyed by case id, written to <dir>/<id>.av1.
+    const dumpParts = new Map();
+    if (opts.dumpBitstream) {
+      await fs.mkdir(opts.dumpBitstream, { recursive: true });
+    }
     const off = browser.on(
       'Runtime.consoleAPICalled',
       (params) => {
@@ -540,6 +554,35 @@ async function runLeg({
         if (!first) return;
         if (first.value === '__D3D12_ENC_CI_DONE__') {
           consoleDone = true;
+        } else if (first.value === '__D3D12_ENC_CI_DUMP__') {
+          const a = params.args;
+          const id = a[1] && a[1].value;
+          const idx = a[2] && a[2].value;
+          const total = a[3] && a[3].value;
+          const b64 = a[4] && a[4].value;
+          if (
+            opts.dumpBitstream &&
+            typeof id === 'string' &&
+            typeof idx === 'number' &&
+            typeof total === 'number' &&
+            typeof b64 === 'string'
+          ) {
+            let parts = dumpParts.get(id);
+            if (!parts) dumpParts.set(id, (parts = []));
+            parts[idx] = b64;
+            if (parts.length === total && parts.every((p) => typeof p === 'string')) {
+              const safe = id.replace(/[^\w.-]+/g, '_');
+              const buf = Buffer.concat(parts.map((p) => Buffer.from(p, 'base64')));
+              fs.writeFile(path.join(opts.dumpBitstream, `${safe}.av1`), buf)
+                .then(() => {
+                  console.log(`dumped ${id}: ${buf.length} bytes`);
+                })
+                .catch((e) => {
+                  console.error(`dump write failed for ${id}: ${e.message}`);
+                });
+              dumpParts.delete(id);
+            }
+          }
         } else if (first.value === '__D3D12_ENC_CI_PROGRESS__') {
           // Per-case progress emitted by the page: "[n/total] pct% id
           // status". The leg label distinguishes the comparison legs from
@@ -788,7 +831,9 @@ async function main() {
     if (opts.pageExternal) {
       return { pageUrl: opts.pageExternal, close: async () => {} };
     }
-    const srv = await startPageServer({ config: { cases: legCases } });
+    const srv = await startPageServer({
+      config: { cases: legCases, dumpBitstream: !!opts.dumpBitstream },
+    });
     return { pageUrl: srv.url, close: srv.close };
   };
 
