@@ -96,7 +96,10 @@ options:
   --stress-resolution       detect each codec/profile's supported resolution
                             range (MediaCapabilities, hardware-gated) and
                             encode+decode 5 geometric points across it
-                            (relaxed floors, like the crop cases)
+                            (relaxed floors, like the crop cases). Without
+                            --all this runs ONLY the resolution detection +
+                            stress cases — the rest of the matrix and the
+                            comparison legs are skipped
   --output <path>           report path (default: results\ directory; the
                             extension may be .html or .json — --format wins)
   --format <f>              html|json  (default: html — a self-contained
@@ -171,6 +174,7 @@ export function parseArgs(argv) {
     ignoreGpuBlocklist: false,
     disableGpuDriverBugWorkarounds: false,
     stressResolution: false,
+    all: false,
     force: false,
     keepProfile: false,
     pageExternal: null,
@@ -231,6 +235,7 @@ export function parseArgs(argv) {
         opts.negativeControl = true;
         opts.l1t3NegativeControl = true;
         opts.compareMf = true;
+        opts.all = true;
         break;
       case '--exclude-hevc-rext':
         opts.excludeHevcRext = true;
@@ -709,6 +714,18 @@ async function main() {
   // and the MF comparison expects matrix-shaped rows. Each leg gets its
   // own page server because the config is baked into the served HTML at
   // server creation (lib/page-server.mjs).
+  //
+  // Stress-only mode: --stress-resolution WITHOUT --all runs the resolution
+  // detection + stress cases and nothing else, so the optional comparison
+  // legs (which need matrix cases) are skipped too.
+  const stressOnly = opts.stressResolution && !opts.all;
+  if (stressOnly && (opts.negativeControl || opts.l1t3NegativeControl || opts.compareMf)) {
+    console.warn(
+      'warning: --stress-resolution without --all runs the resolution ' +
+        'stress only — the comparison legs do not apply and are skipped',
+    );
+  }
+  const mainCases = stressOnly ? cases.filter((c) => c.type) : cases;
   const matrixCases = cases.filter((c) => !c.type);
   const serveLeg = async (legCases) => {
     if (opts.pageExternal) {
@@ -727,11 +744,11 @@ async function main() {
   let harnessError = null;
   let served = null;
   try {
-    served = await serveLeg(cases);
+    served = await serveLeg(mainCases);
     mainLeg = await runLeg({
       chrome,
       pageUrl: served.pageUrl,
-      cases,
+      cases: mainCases,
       opts,
       mode: 'd3d12',
       forceFeatures,
@@ -740,7 +757,7 @@ async function main() {
     harnessError = e;
   }
   if (served) await served.close();
-  if (!harnessError && opts.negativeControl) {
+  if (!harnessError && opts.negativeControl && !stressOnly) {
     try {
       // Start from a clean slate: no Chrome instance of the D3D12 leg may
       // still be alive when the next leg launches.
@@ -759,7 +776,7 @@ async function main() {
     }
     if (served) await served.close();
   }
-  if (!harnessError && opts.l1t3NegativeControl) {
+  if (!harnessError && opts.l1t3NegativeControl && !stressOnly) {
     try {
       // Focused A/B leg: the -l1t2/-l1t3 families plus their base families
       // (the hardware control). Runs with
@@ -793,7 +810,7 @@ async function main() {
     }
     if (served) await served.close();
   }
-  if (!harnessError && opts.compareMf) {
+  if (!harnessError && opts.compareMf && !stressOnly) {
     try {
       const prevLeg = negativeLeg || mainLeg;
       if (prevLeg) killChromeInstancesFor(prevLeg.userDataDir);

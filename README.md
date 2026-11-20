@@ -46,7 +46,7 @@ powershell .\run-tests.ps1 --chrome "C:\path\to\chrome.exe" --exclude-hevc-rext
 | `--bitrate-mode <m>` | `constant`/`variable` for the base families (default: constant) |
 | `--min-psnr <dB>` · `--max-mae <v>` | quality floors (default: 24 dB · 9) |
 | `--all` | every family plus `--stress-resolution`, both negative-control legs and the MF comparison |
-| `--stress-resolution` | resolution-range detection + 5 geometric stress points per codec |
+| `--stress-resolution` | resolution-range detection + 5 geometric stress points per codec. Without `--all`, this runs **only** the resolution detection + stress cases — the rest of the matrix and the comparison legs are skipped |
 | `--negative-control` | extra leg with the D3D12 VEA disabled |
 | `--l1t3-negative-control` | extra leg with the L1T3 feature gate disabled |
 | `--compare-mf` | informational MediaFoundation VEA comparison leg |
@@ -98,6 +98,12 @@ in `results\`. `--format json` writes only the JSON.
 | 4 | unsupported Chrome (< 158 without `--force`) |
 | 5 | negative-control failure |
 | 6 | L1T3 flag-off leg failure |
+
+Cases whose frames fall below the PSNR/MAE quality floors are reported as
+**WARN**, not FAIL: they show up in the report and the verdict reason but do
+not fail the run (exit 0). Encoding errors, decode failures and structural
+gates (crop geometry, resize size, SVC structure, rate-change delivery)
+remain FAIL.
 
 ## CI wiring example
 
