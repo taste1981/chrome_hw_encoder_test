@@ -111,10 +111,13 @@ options:
                             per-width sweep (step 128, subsampling parity
                             applied) of the advertised min/max heights with
                             bisection to the actual encodable frontier.
-                            The report gets a dedicated map section with
-                            the full sweep table. NOT included in --all;
-                            without --all this runs ONLY the resolution
-                            detection + map cases
+                            Reports the WxH upper bound (max encodable
+                            pixel area + frontier product spread) and the
+                            max encodable width. The report gets a
+                            dedicated map section with the full sweep
+                            table. NOT included in --all; without --all
+                            this runs ONLY the resolution detection + map
+                            cases
   --output <path>           report path (default: results\ directory; the
                             extension may be .html or .json — --format wins)
   --format <f>              html|json  (default: html — a self-contained
