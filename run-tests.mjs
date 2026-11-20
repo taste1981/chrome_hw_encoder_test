@@ -108,8 +108,11 @@ options:
                             hardware-gated) and report the supported-
                             resolution map: per-width min/max height curve
                             (bisection-refined), bounding box, and
-                            unsupported holes inside the box. NOT included
-                            in --all; without --all this runs ONLY the
+                            unsupported holes inside the box — then
+                            ENCODE-verify one frame at the geometric point
+                            set (advertised resolutions the real encoder
+                            fails are case failures). NOT included in
+                            --all; without --all this runs ONLY the
                             resolution detection + map cases
   --output <path>           report path (default: results\ directory; the
                             extension may be .html or .json — --format wins)
@@ -563,10 +566,14 @@ async function runLeg({
     // Stress defs materialize several real encodes each (one per geometric
     // point), so the deadline must weight them by their point count. Each
     // point also spawns its mirrored portrait twin, so a stress def costs
-    // up to 2x its point count.
+    // up to 2x its point count; a map def costs up to its verification
+    // point count (encode-verify of the measured bounds).
     const caseCount = Math.max(
       1,
-      cases.reduce((n, c) => n + (c.stressPoints ? c.stressPoints * 2 : 1), 0),
+      cases.reduce(
+        (n, c) => n + (c.stressPoints ? c.stressPoints * 2 : c.verifyPoints || 1),
+        0,
+      ),
     );
     const deadline = Date.now() + perCaseTimeoutMs * caseCount;
 
