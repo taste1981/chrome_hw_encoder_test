@@ -65,6 +65,8 @@ powershell .\run-tests.ps1 --chrome "C:\path\to\chrome.exe" --exclude-hevc-rext
 | Base codecs | `h264`, `hevc`, `av1`, `hevc-10b420/10b422/10b444`, `av1-10b444`, `av1-8b444` (720p + 1080p) |
 | Screen content | `<codec>-screen` (1080p) |
 | Cropped encoding | `h264`/`hevc`/`hevc-10b420` `-crop-mb/-offset/-both` |
+| Crop from hardware decode | `h264`/`hevc`/`hevc-10b420` `-crop-hwdec` (hardware-decoded 640×480 frame, centered 480×360 crop — mirrors the Chromium webcodecs crop-encode GPU test) |
+| Scaled input | `h264`/`hevc`/`hevc-10b420` `-scale-up/-down` (input frames half/double the configured size; the accelerator must scale them) |
 | Temporal scalability | `<codec>-l1t2`, `<codec>-l1t3` |
 | Dynamic frame size | `<codec>-resize` (mid-stream size changes, 105-frame schedule) |
 | Bitrate control modes | `<codec>-vbr`, `<codec>-cqp` (CBR is the base mode) |

@@ -168,6 +168,10 @@ export function parseArgs(argv) {
       'h264-crop-mb,h264-crop-offset,h264-crop-both,' +
       'hevc-crop-mb,hevc-crop-offset,hevc-crop-both,' +
       'hevc-10b420-crop-mb,hevc-10b420-crop-offset,hevc-10b420-crop-both,' +
+      'h264-scale-up,h264-scale-down,' +
+      'hevc-scale-up,hevc-scale-down,' +
+      'hevc-10b420-scale-up,hevc-10b420-scale-down,' +
+      'h264-crop-hwdec,hevc-crop-hwdec,hevc-10b420-crop-hwdec,' +
       'h264-l1t2,h264-l1t3,hevc-l1t2,hevc-l1t3,av1-l1t2,av1-l1t3,' +
       'h264-resize,hevc-resize,av1-resize,' +
       'h264-vbr,h264-cqp,hevc-vbr,hevc-cqp,av1-vbr,av1-cqp,' +
