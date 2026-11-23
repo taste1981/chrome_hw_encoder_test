@@ -124,9 +124,11 @@ options:
                             section-by-section page, overall status first;
                             the .json data twin is always written too)
   --dump-bitstream <dir>    write every case's first keyframe chunk to
-                            <dir>/<case-id>.av1 (debug aid for inspecting the
-                            raw encoded bitstream; the stream is chunked over
-                            console markers, so runs are slower with it on)
+                            <dir>/<case-id>.<codec> (extension matches the
+                            case's codec family: .h264/.hevc/.av1/.bin;
+                            debug aid for inspecting the raw encoded
+                            bitstream; the stream is chunked over console
+                            markers, so runs are slower with it on)
   --negative-control        second run with --disable-features=D3D12VideoEncodeAccelerator
   --l1t3-negative-control   extra run with --disable-features=D3D12VideoEncodeAcceleratorL1T3:
                             -l1t3 cases must SKIP (the flag gates L1T3) while
@@ -572,8 +574,13 @@ async function runLeg({
             parts[idx] = b64;
             if (parts.length === total && parts.every((p) => typeof p === 'string')) {
               const safe = id.replace(/[^\w.-]+/g, '_');
+              // The case id's first segment names the codec family; use it for
+              // the file extension so HEVC/H264 dumps aren't mislabeled .av1.
+              const ext = { h264: 'h264', hevc: 'hevc', av1: 'av1' }[
+                id.split('-')[0]
+              ] ?? 'bin';
               const buf = Buffer.concat(parts.map((p) => Buffer.from(p, 'base64')));
-              fs.writeFile(path.join(opts.dumpBitstream, `${safe}.av1`), buf)
+              fs.writeFile(path.join(opts.dumpBitstream, `${safe}.${ext}`), buf)
                 .then(() => {
                   console.log(`dumped ${id}: ${buf.length} bytes`);
                 })
