@@ -72,7 +72,7 @@ powershell .\run-tests.ps1 --chrome "C:\path\to\chrome.exe" --exclude-hevc-rext
 | Bitrate control modes | `<codec>-vbr`, `<codec>-cqp` (CBR is the base mode) |
 | Manual reference control | `<codec>-manual` |
 | GPU shared-image input | `<codec>-gpu` (decode-to-encode transcode) |
-| Rate reconfiguration | `<codec>-ratechange` (rate-only changes, no reinit) |
+| Rate reconfiguration | `<codec>-ratechange` (rate-only changes, no reinit; AV1 segments ≥2 s — its software RC needs ~1 s to converge, H.264/HEVC keep 20-frame segments) |
 | Periodic keyframes | `<codec>-keyframes`, `h264`/`hevc` `-l1t3-keyframes` |
 | HDR signaling | `hevc-hdr10` (BT.2020/PQ) |
 | Concurrent encoders | `<codec>-dual` (two simultaneous encoder instances) |
